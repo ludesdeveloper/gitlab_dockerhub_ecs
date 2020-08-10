@@ -1,0 +1,27 @@
+stages:
+    - docker build
+    - docker push
+
+docker-build:
+    stage: docker build
+    image: docker:latest
+    services:
+      - docker:dind
+    script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build --pull -t "$CI_REGISTRY_IMAGE" .
+    - docker push "$CI_REGISTRY_IMAGE"
+    only:
+    - master
+  
+docker-push:
+    stage: docker push
+    image: python:latest
+    services:
+        - docker:dind
+    script:
+        - pip install awscli
+        - aws ecs update-service --region "${REGION}" --cluster "${CLUSTER_NAME}" --service "${SERVICE_NAME}" --force-new-deployment
+    only:
+        - master
+
